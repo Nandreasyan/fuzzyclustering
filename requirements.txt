@@ -1,0 +1,8 @@
+networkx
+numpy
+matplotlib
+scipy
+scikit-learn
+pandas
+scikit-fuzzy
+fuzzy-c-means
