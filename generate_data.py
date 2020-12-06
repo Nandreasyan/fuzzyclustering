@@ -1,12 +1,11 @@
 import numpy as np
-import itertools
 import networkx as nx
-import matplotlib.pyplot as plt
-import collections
-import random
 
 
 def generate_skills(skills_sets, N, min_skill_sets, max_skill_sets, min_edits, max_edits):
+    """Generate N random users_skills based on skills_sets
+    add a bit of noise with the min and max edits
+    """
     all_skills = list()
     for ss in skills_sets:
         all_skills += ss
@@ -44,9 +43,43 @@ def generate_skills(skills_sets, N, min_skill_sets, max_skill_sets, min_edits, m
         users_skills.append(user_skills)
         clusters_ground_truth.append(skills_sets_indices[0])
 
+    users_skills = np.array(users_skills)
+    clusters_ground_truth = np.array(clusters_ground_truth)
+
     return users_skills, clusters_ground_truth
 
 
-def generate_graph(N, K, P, seed):
-    G = nx.watts_strogatz_graph(N, K, P, seed)
+def generate_graph(clusters_ground_truth, cluster_boost=3, m=2):
+    """Creating a graph according to the PREFERENTIAL ATTACHMENT MODEL
+    for a social graph alike"""
+    G = nx.Graph()
+
+    # initialize the two first users
+    G.add_node(0)
+    G.add_node(1)
+    G.add_edge(0, 1)
+
+    for c_node, cluster in list(enumerate(clusters_ground_truth))[2:]:
+        candidates = list(G.nodes)
+        G.add_node(c_node)
+
+        degrees = np.array([G.degree[node] for node in candidates])
+        P_degrees = degrees / degrees.sum()
+        # prefer to attach to people in it's own cluster
+        P_cluster = np.array([cluster_boost if clusters_ground_truth[node]
+                              == cluster else 1 / cluster_boost for node in candidates])
+        P = P_degrees * P_cluster
+
+        while G.degree[c_node] < m:
+            potential_node = np.random.randint(0, len(candidates))
+            p = P[potential_node]
+            if np.random.random() <= p:
+                G.add_edge(c_node, potential_node)
+            candidates = np.delete(candidates, potential_node)
+            P = np.delete(P, potential_node)
+            if len(candidates) <= 0:
+                break
+
+    print(len(G.edges), len(G.nodes))
+
     return G
