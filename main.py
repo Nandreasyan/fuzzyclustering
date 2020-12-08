@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.spatial.distance import cdist
+from sklearn.decomposition import PCA
 
+from matplotlib import pyplot as plt
 from clustering import clustering, evaluate_clustering, fzclustering
 from generate_data import generate_skills, generate_graph
 from misc import plot_graph
@@ -44,10 +46,24 @@ def use_case_fuzzy_cmean(users_skills, clusters_ground_truth):
 
     users_distances_to_centers = cdist(
         users_skills, fuzzyclustering_model[0], metric=distance_function)
-    # print(evaluate_clustering(clusters_ground_truth, fuzzyclustering_model[1]))
+    print(" Evluate clsutering fuzzy ", evaluate_clustering(clusters_ground_truth, fuzzyclustering_model[1]))
+
+    pca = PCA(n_components=2)
+
+    pca.fit(users_skills)
+    new_data = pca.transform(users_skills)
+
+    pca.fit(fuzzyclustering_model[0])
+    new_data2 = pca.transform(fuzzyclustering_model[0])
+    c = np.concatenate((fuzzyclustering_model[1], np.array([6] * 6)))
+    new_data = np.concatenate((new_data, new_data2), axis=0)
+
+    plt.scatter(new_data.T[0], new_data.T[1], c=c, alpha=0.5)
+    plt.show()
+
 
     # print("Plotting graph")
-    plot_graph(G, "Clustered_graph_fuzzy.png", colors=fuzzyclustering_model[7])
+    plot_graph(G, "Clustered_graph_fuzzy.png", colors=fuzzyclustering_model[1])
 
 
 def use_case_kmeans(users_skills, clusters_ground_truth):
@@ -58,7 +74,20 @@ def use_case_kmeans(users_skills, clusters_ground_truth):
 
     users_distances_to_centers = cdist(
         users_skills, clustering_model.cluster_centers_, metric=distance_function)
-    evaluate_clustering(clusters_ground_truth, clustering_model.labels_)
+    print("Kmenas mujtual score", evaluate_clustering(clusters_ground_truth, clustering_model.labels_))
+
+    # pca = PCA(n_components=2)
+    #
+    # pca.fit(users_skills)
+    # new_data = pca.transform(users_skills)
+    #
+    # pca.fit(clustering_model.cluster_centers_)
+    # new_data2 = pca.transform(clustering_model.cluster_centers_)
+    # c = np.concatenate((clustering_model.labels_, np.array([6] * 6)))
+    # new_data = np.concatenate((new_data, new_data2), axis=0)
+    #
+    # plt.scatter(new_data.T[0], new_data.T[1], c=c, alpha=0.5)
+    # plt.show()
 
     # print("Plotting graph")
     plot_graph(G, "Clustered_graph_K-Means.png", colors=clustering_model.labels_)
@@ -68,11 +97,22 @@ if __name__ == '__main__':
     print("Generating skills")
     users_skills, clusters_ground_truth = generate_skills(
         skills_sets, N, min_skill_sets, max_skill_sets, min_edits, max_edits)
+
+    # pca = PCA(n_components=2)
+    # pca.fit(users_skills)
+    # new_data = pca.transform(users_skills)
+    # plt.scatter(new_data.T[0], new_data.T[1].T,  c=clusters_ground_truth, alpha=0.5)
+    # plt.show()
+
+    # print('pcaexplaned userskills', pca.explained_variance_ratio_)
+    # print('singular values', pca.singular_values_)
+
+
     print("Generating graph")
     G = generate_graph(clusters_ground_truth)
 
     # print("Using KMeans")
-    use_case_kmeans(users_skills, clusters_ground_truth)
+    #use_case_kmeans(users_skills, clusters_ground_truth)
 
     # print("Using Fuzzy C-Means")
     use_case_fuzzy_cmean(users_skills, clusters_ground_truth)

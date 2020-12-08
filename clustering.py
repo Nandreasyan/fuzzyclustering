@@ -118,7 +118,7 @@ def fzclustering(users_skills, n_clusters_range, plot=False):
         fcm_centers = fuzzy_fcm.centers
         fcm_labels = fuzzy_fcm.predict(X)
 
-        fuzzy_clustering_coeff = fuzzy_part_coeff(fcm_centers)
+        fuzzy_clustering_coeff = fuzzy_part_coeff(np.transpose(fuzzy_fcm.u))
 
         fpcs_2.append(fuzzy_clustering_coeff)
 
@@ -127,6 +127,7 @@ def fzclustering(users_skills, n_clusters_range, plot=False):
         print("")
 
     best_nun_cluster_1 = max(fzmodels_1.values(), key=lambda x: x[6])
+
     best_centers_2 = max(fzmodels_2.values(), key=lambda x: x[2])
     print("")
     if plot:
@@ -140,4 +141,4 @@ def fzclustering(users_skills, n_clusters_range, plot=False):
         plt.savefig(f"clustering_Fuzzy_1.png")
         plt.close()
 
-    return best_nun_cluster_1
+    return fzmodels_2[6]
