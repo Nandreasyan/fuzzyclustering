@@ -140,3 +140,10 @@ class FCM:
             return np.sum(self.u ** 2) / self.n_samples
         else:
             raise ReferenceError("You need to train the model first. You can use `.fit()` method to this.")
+
+    @property
+    def partition_entropy_coefficient(self):
+        if hasattr(self, 'u'):
+            return -np.sum(self.u * np.log2(self.u)) / self.n_samples
+        else:
+            raise ReferenceError("You need to train the model first. You can use `.fit()` method to this.")

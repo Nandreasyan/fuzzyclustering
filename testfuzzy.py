@@ -1,9 +1,9 @@
-import skfuzzy as fuzz
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-from scipy.spatial.distance import dice, cdist
-from generate_data import generate_skills, generate_graph
+import numpy as np
+from scipy.spatial.distance import dice
+
+from fcm import FCM
+from generate_data import skills_gen, generate_graph
 
 np.set_printoptions(formatter={"float": lambda x: "{0:0.2f}".format(x)})
 
@@ -30,24 +30,22 @@ max_edits = 3  # Maximal of random edition of the user skill sets
 set_distance_function = dice
 
 print("Generating skills")
-users_skills, clusters_ground_truth = generate_skills(
+users_skills, clusters_ground_truth = skills_gen(
     skills_sets, N, min_skill_sets, max_skill_sets, min_edits, max_edits)
 
 print("Generating graph")
 G = generate_graph(clusters_ground_truth)
 
-colors = ['b', 'orange', 'g', 'r', 'c', 'm', 'y', 'k', 'Brown', 'ForestGreen']
 
 # Define three cluster centers
-centers = [[1, 3],
-           [2, 2],
-           [3, 8]]
+centers = [[4, 2],
+           [1, 7],
+           [5, 6]]
 
 # Define three cluster sigmas in x and y, respectively
-sigmas = [[0.3, 0.5],
-          [0.5, 0.3],
-          [0.5, 0.3]]
-
+sigmas = [[0.8, 0.3],
+          [0.3, 0.5],
+          [1.1, 0.7]]
 # Generate test data
 np.random.seed(42)  # Set seed for reproducibility
 xpts = np.zeros(1)
@@ -58,191 +56,44 @@ for i, ((xmu, ymu), (xsigma, ysigma)) in enumerate(zip(centers, sigmas)):
     ypts = np.hstack((ypts, np.random.standard_normal(200) * ysigma + ymu))
     labels = np.hstack((labels, np.ones(200) * i))
 
-
-# Set up the loop and plot
-fig1, axes1 = plt.subplots(3, 3, figsize=(10, 10))
 alldata = np.vstack((xpts, ypts))
 fpcs = []
 
-for ncenters, ax in enumerate(axes1.reshape(-1), 2):
-    cntr, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(
-        alldata, ncenters, 2, error=0.005, maxiter=1000, init=None)
-    testfuzzy = fuzz.cluster.cmeans(
-        alldata, ncenters, 2, error=0.005, maxiter=1000, init=None)
-    # Store fpc values for later
-    fpcs.append(fpc)
+n_samples = 300
 
-    # Plot assigned clusters, for each data point in training set
-    cluster_membership = np.argmax(u, axis=0)
-    for j in range(ncenters):
-        ax.plot(xpts[cluster_membership == j],
-                ypts[cluster_membership == j], '.', color=colors[j])
+X_test = np.concatenate((
+    np.random.normal((-2, -2), size=(n_samples, 2)),
+    np.random.normal((2, 2), size=(n_samples, 2)),
+    np.random.normal((9, 0), size=(n_samples, 2)),
+    np.random.normal((5, -8), size=(n_samples, 2))
+))
 
-    # Mark the center of each fuzzy cluster
-    for pt in cntr:
-        ax.plot(pt[0], pt[1], 'rs')
 
-    ax.set_title('Centers = {0}; FPC = {1:.2f}'.format(ncenters, fpc), size=12)
-    ax.axis('off')
-
-fig1.tight_layout()
-
-fig2, ax2 = plt.subplots()
-ax2.plot(np.r_[2:11], fpcs, color='#731810')
-ax2.set_title("How Number of Clusters Change FPC?")
-ax2.set_xlabel("Number of centers")
-ax2.set_ylabel("Fuzzy partition coefficient")
+plt.figure(figsize=(5, 5))
+plt.scatter(X_test[:, 0], X_test[:, 1], alpha=.1)
 plt.show()
 
-import math
-import collections
-import random
-import copy
-import pylab
+n_clusters_list = [2, 3, 4, 5, 6, 7]
+models = list()
+for n_clusters in n_clusters_list:
+    fcm = FCM(n_clusters)
+    fcm.fit(X_test)
+    models.append(fcm)
 
-try:
-    import psyco
+# outputs
+num_clusters = len(n_clusters_list)
+rows = int(np.ceil(np.sqrt(num_clusters)))
+cols = int(np.ceil(num_clusters / rows))
+f, axes = plt.subplots(rows, cols, figsize=(11, 16))
+for n_clusters, model, axe in zip(n_clusters_list, models, axes.ravel()):
+    # get validation metrics
+    pc = model.partition_coefficient
+    pec = model.partition_entropy_coefficient
 
-    psyco.full()
-except ImportError:
-    pass
-
-FLOAT_MAX = 1e100
-
-
-class Point:
-    __slots__ = ["x", "y", "group", "membership"]
-
-    def __init__(self, clusterCenterNumber, x=0, y=0, group=0):
-        self.x, self.y, self.group = x, y, group
-        self.membership = [0.0 for _ in range(clusterCenterNumber)]
-
-
-def generatePoints(pointsNumber, radius, clusterCenterNumber):
-    points = [Point(clusterCenterNumber) for _ in range(2 * pointsNumber)]
-    count = 0
-    for point in points:
-        count += 1
-        r = random.random() * radius
-        angle = random.random() * 2 * math.pi
-        point.x = r * math.cos(angle)
-        point.y = r * math.sin(angle)
-        if count == pointsNumber - 1:
-            break
-    for index in range(pointsNumber, 2 * pointsNumber):
-        points[index].x = 2 * radius * random.random() - radius
-        points[index].y = 2 * radius * random.random() - radius
-    return points
-
-
-def solveDistanceBetweenPoints(pointA, pointB):
-    return (pointA.x - pointB.x) * (pointA.x - pointB.x) + (pointA.y - pointB.y) * (pointA.y - pointB.y)
-
-
-def getNearestCenter(point, clusterCenterGroup):
-    minIndex = point.group
-    minDistance = FLOAT_MAX
-    for index, center in enumerate(clusterCenterGroup):
-        distance = solveDistanceBetweenPoints(point, center)
-        if (distance < minDistance):
-            minDistance = distance
-            minIndex = index
-    return (minIndex, minDistance)
-
-
-def kMeansPlusPlus(points, clusterCenterGroup):
-    clusterCenterGroup[0] = copy.copy(random.choice(points))
-    distanceGroup = [0.0 for _ in range(len(points))]
-    sum = 0.0
-    for index in range(1, len(clusterCenterGroup)):
-        for i, point in enumerate(points):
-            distanceGroup[i] = getNearestCenter(point, clusterCenterGroup[:index])[1]
-            sum += distanceGroup[i]
-        sum *= random.random()
-        for i, distance in enumerate(distanceGroup):
-            sum -= distance;
-            if sum < 0:
-                clusterCenterGroup[index] = copy.copy(points[i])
-                break
-    return
-
-
-def fuzzyCMeansClustering(points, clusterCenterNumber, weight):
-    clusterCenterGroup = [Point(clusterCenterNumber) for _ in range(clusterCenterNumber)]
-    kMeansPlusPlus(points, clusterCenterGroup)
-    clusterCenterTrace = [[clusterCenter] for clusterCenter in clusterCenterGroup]
-    tolerableError, currentError = 1.0, FLOAT_MAX
-    while currentError >= tolerableError:
-        for point in points:
-            getSingleMembership(point, clusterCenterGroup, weight)
-        currentCenterGroup = [Point(clusterCenterNumber) for _ in range(clusterCenterNumber)]
-        for centerIndex, center in enumerate(currentCenterGroup):
-            upperSumX, upperSumY, lowerSum = 0.0, 0.0, 0.0
-            for point in points:
-                membershipWeight = pow(point.membership[centerIndex], weight)
-                upperSumX += point.x * membershipWeight
-                upperSumY += point.y * membershipWeight
-                lowerSum += membershipWeight
-            center.x = upperSumX / lowerSum
-            center.y = upperSumY / lowerSum
-        # update cluster center trace
-        currentError = 0.0
-        for index, singleTrace in enumerate(clusterCenterTrace):
-            singleTrace.append(currentCenterGroup[index])
-            currentError += solveDistanceBetweenPoints(singleTrace[-1], singleTrace[-2])
-            clusterCenterGroup[index] = copy.copy(currentCenterGroup[index])
-    for point in points:
-        maxIndex, maxMembership = 0, 0.0
-        for index, singleMembership in enumerate(point.membership):
-            if singleMembership > maxMembership:
-                maxMembership = singleMembership
-                maxIndex = index
-        point.group = maxIndex
-    return clusterCenterGroup, clusterCenterTrace
-
-
-def getSingleMembership(point, clusterCenterGroup, weight):
-    distanceFromPoint2ClusterCenterGroup = [solveDistanceBetweenPoints(point, clusterCenterGroup[index]) for index in
-                                            range(len(clusterCenterGroup))]
-    for centerIndex, singleMembership in enumerate(point.membership):
-        sum = 0.0
-        isCoincide = [False, 0]
-        for index, distance in enumerate(distanceFromPoint2ClusterCenterGroup):
-            if distance == 0:
-                isCoincide[0] = True
-                isCoincide[1] = index
-                break
-            sum += pow(float(distanceFromPoint2ClusterCenterGroup[centerIndex] / distance), 1.0 / (weight - 1.0))
-        if isCoincide[0]:
-            if isCoincide[1] == centerIndex:
-                point.membership[centerIndex] = 1.0
-            else:
-                point.membership[centerIndex] = 0.0
-        else:
-            point.membership[centerIndex] = 1.0 / sum
-
-
-def showClusterAnalysisResults(points, clusterCenterTrace):
-    colorStore = ['or', 'og', 'ob', 'oc', 'om', 'oy', 'ok']
-    pylab.figure(figsize=(9, 9), dpi=80)
-    for point in points:
-        color = ''
-        if point.group >= len(colorStore):
-            color = colorStore[-1]
-        else:
-            color = colorStore[point.group]
-        pylab.plot(point.x, point.y, color)
-    for singleTrace in clusterCenterTrace:
-        pylab.plot([center.x for center in singleTrace], [center.y for center in singleTrace], 'k')
-    pylab.show()
-
-
-clusterCenterNumber = 5
-pointsNumber = 1000
-radius = 10
-weight = 2
-points = generatePoints(pointsNumber, radius, clusterCenterNumber)
-testvalue_, clusterCenterTrace = fuzzyCMeansClustering(points, clusterCenterNumber, weight)
-showClusterAnalysisResults(points, clusterCenterTrace)
-
-print(testvalue_)
+    fcm_centers = model.centers
+    fcm_labels = model.predict(X_test)
+    # plot result
+    axe.scatter(X_test[:, 0], X_test[:, 1], c=fcm_labels, alpha=.1)
+    axe.scatter(fcm_centers[:, 0], fcm_centers[:, 1], marker="+", s=500, c='black')
+    axe.set_title(f'n_clusters = {n_clusters}, PC = {pc:.3f}, PEC = {pec:.3f}')
+plt.show()

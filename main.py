@@ -4,7 +4,7 @@ from sklearn.decomposition import PCA
 
 from matplotlib import pyplot as plt
 from clustering import clustering, evaluate_clustering, fzclustering
-from generate_data import generate_skills, generate_graph
+from generate_data import skills_gen, generate_graph, skills_gen_fz
 from misc import plot_graph
 
 np.set_printoptions(formatter={"float": lambda x: "{0:0.2f}".format(x)})
@@ -22,8 +22,6 @@ skills_sets = [
 seed = int(np.pi * 37)  # Seed for random number generation
 np.random.seed(seed)
 
-use_fuzzy_clustering = True
-
 N = 300  # The number of nodes
 
 min_skill_sets = 1  # The minimum of skills set to add to a user
@@ -38,26 +36,32 @@ distance_function = "euclidean"
 
 def use_case_fuzzy_cmean(users_skills, clusters_ground_truth):
     print("Clustering")
-    fuzzyclustering_model = fzclustering(users_skills, range(*clustering_range), True)
+
+    fuzzy_skills = users_skills.astype(np.float)
+
+    for i in range(len(fuzzy_skills)):
+        for j in range(fuzzy_skills.shape[1]):
+            if fuzzy_skills[i, j] != 0:
+                fuzzy_skills[i, j] = abs(np.random.uniform(0.2, 1))
+
+    fuzzyclustering_model = fzclustering(fuzzy_skills, range(*clustering_range), True)
     # returned values with order
     # Cluster centers. Data for each center along each feature provided for every cluster (of the c requested clusters).
     print("- Number of clusters found", len(fuzzyclustering_model[0]))
     print("- Real number of clusters", len(skills_sets))
 
-    users_distances_to_centers = cdist(
-        users_skills, fuzzyclustering_model[0], metric=distance_function)
-    print(" Evluate clsutering fuzzy ", evaluate_clustering(clusters_ground_truth, fuzzyclustering_model[1]))
+    print("Evaluate fuzzy clustering ", evaluate_clustering(clusters_ground_truth, fuzzyclustering_model[1]))
 
     pca = PCA(n_components=2)
-
+    #
     pca.fit(users_skills)
     new_data = pca.transform(users_skills)
-
+    #
     pca.fit(fuzzyclustering_model[0])
     new_data2 = pca.transform(fuzzyclustering_model[0])
     c = np.concatenate((fuzzyclustering_model[1], np.array([6] * 6)))
     new_data = np.concatenate((new_data, new_data2), axis=0)
-
+    #
     plt.scatter(new_data.T[0], new_data.T[1], c=c, alpha=0.5)
     plt.show()
 
@@ -72,22 +76,20 @@ def use_case_kmeans(users_skills, clusters_ground_truth):
     print("- Number of clusters found", len(clustering_model.cluster_centers_))
     print("- Real number of clusters", len(skills_sets))
 
-    users_distances_to_centers = cdist(
-        users_skills, clustering_model.cluster_centers_, metric=distance_function)
     print("Kmenas mujtual score", evaluate_clustering(clusters_ground_truth, clustering_model.labels_))
 
-    # pca = PCA(n_components=2)
+    pca = PCA(n_components=2)
     #
-    # pca.fit(users_skills)
-    # new_data = pca.transform(users_skills)
+    pca.fit(users_skills)
+    new_data = pca.transform(users_skills)
     #
-    # pca.fit(clustering_model.cluster_centers_)
-    # new_data2 = pca.transform(clustering_model.cluster_centers_)
-    # c = np.concatenate((clustering_model.labels_, np.array([6] * 6)))
-    # new_data = np.concatenate((new_data, new_data2), axis=0)
+    pca.fit(clustering_model.cluster_centers_)
+    new_data2 = pca.transform(clustering_model.cluster_centers_)
+    c = np.concatenate((clustering_model.labels_, np.array([6] * 6)))
+    new_data = np.concatenate((new_data, new_data2), axis=0)
     #
-    # plt.scatter(new_data.T[0], new_data.T[1], c=c, alpha=0.5)
-    # plt.show()
+    plt.scatter(new_data.T[0], new_data.T[1], c=c, alpha=0.5)
+    plt.show()
 
     # print("Plotting graph")
     plot_graph(G, "Clustered_graph_K-Means.png", colors=clustering_model.labels_)
@@ -95,7 +97,10 @@ def use_case_kmeans(users_skills, clusters_ground_truth):
 
 if __name__ == '__main__':
     print("Generating skills")
-    users_skills, clusters_ground_truth = generate_skills(
+    users_skills, clusters_ground_truth = skills_gen(
+        skills_sets, N, min_skill_sets, max_skill_sets, min_edits, max_edits)
+
+    users_skills_fz, clusters_ground_truth_fz = skills_gen_fz(
         skills_sets, N, min_skill_sets, max_skill_sets, min_edits, max_edits)
 
     # pca = PCA(n_components=2)
@@ -109,10 +114,13 @@ if __name__ == '__main__':
 
 
     print("Generating graph")
-    G = generate_graph(clusters_ground_truth)
+    G = generate_graph(clusters_ground_truth_fz)
 
     # print("Using KMeans")
-    #use_case_kmeans(users_skills, clusters_ground_truth)
-
+    userdistances = use_case_kmeans(users_skills, clusters_ground_truth)
+    #print(userdistances)
     # print("Using Fuzzy C-Means")
-    use_case_fuzzy_cmean(users_skills, clusters_ground_truth)
+
+
+
+    #use_case_fuzzy_cmean(users_skills_fz, clusters_ground_truth_fz)

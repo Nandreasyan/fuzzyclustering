@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
 from sklearn.metrics import davies_bouldin_score, silhouette_score, calinski_harabasz_score
 from sklearn.metrics import normalized_mutual_info_score
-from fcmeans import FCM
+from fcm import FCM
 
 
 def clustering(users_skills, n_clusters_range, plot=False):
@@ -81,11 +81,6 @@ def evaluate_clustering(clusters_ground_truth, cluster_predicted):
         clusters_ground_truth, cluster_predicted))
 
 
-def fuzzy_part_coeff(u):
-    n = u.shape[1]
-
-    return np.trace(u.dot(u.T)) / float(n)
-
 def fzclustering(users_skills, n_clusters_range, plot=False):
     X = users_skills
     n_clusters_range = list(n_clusters_range)
@@ -99,32 +94,33 @@ def fzclustering(users_skills, n_clusters_range, plot=False):
     fpcs_2 = []
 
     # Find the best number of clusters
-    for n in n_clusters_range:
-        kmeans = KMeans(n_clusters=n, random_state=42,
-                        n_init=3, max_iter=50).fit(X)
-        models[n] = kmeans
-
-        cntr, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(
-            np.transpose(X), n, 2, error=0.005, maxiter=100, init=None)
-        fpcs.append(fpc)
-        # labels_
-        cluster_membership = np.argmax(u, axis=0)
-        fzmodels_1[n] = cntr, u, u0, d, jm, p, fpc, cluster_membership
+    for n_clusters_ in n_clusters_range:
+        # kmeans = KMeans(n_clusters=n_clusters_, random_state=42,
+        #                 n_init=3, max_iter=150).fit(X)
+        # models[n_clusters_] = kmeans
+        #
+        # cntr, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(
+        #     np.transpose(X), n_clusters_, 2, error=0.005, maxiter=150, init=None)
+        # fpcs.append(fpc)
+        # # labels_
+        # cluster_membership = np.argmax(u, axis=0)
+        # fzmodels_1[n_clusters_] = cntr, u, u0, d, jm, p, fpc, cluster_membership
 
         # another library
-        fuzzy_fcm = FCM(n_clusters=n, max_iter=150, m=2, error=1e-5, random_state=42)
+        fuzzy_fcm = FCM(n_clusters=n_clusters_, max_iter=150, m=2, error=1e-5, random_state=42)
         fuzzy_fcm.fit(X)
 
         fcm_centers = fuzzy_fcm.centers
         fcm_labels = fuzzy_fcm.predict(X)
 
-        fuzzy_clustering_coeff = fuzzy_part_coeff(np.transpose(fuzzy_fcm.u))
+        fuzzy_clustering_coeff = fuzzy_fcm.partition_coefficient
+        pec = fuzzy_fcm.partition_entropy_coefficient
 
         fpcs_2.append(fuzzy_clustering_coeff)
 
-        fzmodels_2[n] = fcm_centers, fcm_labels, fuzzy_clustering_coeff
+        fzmodels_2[n_clusters_] = fcm_centers, fcm_labels, fuzzy_clustering_coeff
 
-        print("")
+        #print("")
 
     best_nun_cluster_1 = max(fzmodels_1.values(), key=lambda x: x[6])
 

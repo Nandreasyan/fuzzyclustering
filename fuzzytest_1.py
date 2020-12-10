@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 from scipy.spatial.distance import dice, cdist
 
-from generate_data import generate_skills, generate_graph
+from generate_data import skills_gen, generate_graph
 from clustering import clustering, evaluate_clustering
 from misc import plot_graph
 
@@ -37,7 +37,7 @@ max_edits = 3  # Maximal of random edition of the user skill sets
 set_distance_function = dice
 
 print("Generating skills")
-users_skills, clusters_ground_truth = generate_skills(
+users_skills, clusters_ground_truth = skills_gen(
     skills_sets, N, min_skill_sets, max_skill_sets, min_edits, max_edits)
 
 print("Generating graph")
