@@ -117,10 +117,10 @@ if __name__ == '__main__':
     G = generate_graph(clusters_ground_truth_fz)
 
     # print("Using KMeans")
-    userdistances = use_case_kmeans(users_skills, clusters_ground_truth)
+    #userdistances = use_case_kmeans(users_skills, clusters_ground_truth)
     #print(userdistances)
     # print("Using Fuzzy C-Means")
 
 
 
-    #use_case_fuzzy_cmean(users_skills_fz, clusters_ground_truth_fz)
+    use_case_fuzzy_cmean(users_skills, clusters_ground_truth)

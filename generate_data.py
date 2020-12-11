@@ -36,9 +36,9 @@ def skills_gen(skills_sets, N, min_skill_sets, max_skill_sets, min_edits, max_ed
             nonzero_idxs = np.where(user_skills != 0)[0]
             a[nonzero_idxs] = nbTrue
             a[np.logical_not(user_skills)] = nbFalse
-            p = np.array(user_skills)
-            p /= p.sum()
-            #p = np.full(len(user_skills), 0.5) / a
+            #p = np.array(user_skills)
+            #p /= p.sum()
+            p = np.full(len(user_skills), 0.5) / a
 
             i = np.random.choice(range(len(all_skills)), p=p)
             user_skills[i] ^= 1

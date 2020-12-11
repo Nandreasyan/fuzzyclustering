@@ -107,7 +107,7 @@ def fzclustering(users_skills, n_clusters_range, plot=False):
         # fzmodels_1[n_clusters_] = cntr, u, u0, d, jm, p, fpc, cluster_membership
 
         # another library
-        fuzzy_fcm = FCM(n_clusters=n_clusters_, max_iter=150, m=2, error=1e-5, random_state=42)
+        fuzzy_fcm = FCM(n_clusters=n_clusters_, max_iter=150, m=1.01, error=1e-5, random_state=42)
         fuzzy_fcm.fit(X)
 
         fcm_centers = fuzzy_fcm.centers
@@ -122,7 +122,7 @@ def fzclustering(users_skills, n_clusters_range, plot=False):
 
         #print("")
 
-    best_nun_cluster_1 = max(fzmodels_1.values(), key=lambda x: x[6])
+    #best_nun_cluster_1 = max(fzmodels_1.values(), key=lambda x: x[6])
 
     best_centers_2 = max(fzmodels_2.values(), key=lambda x: x[2])
     print("")
