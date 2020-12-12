@@ -1,8 +1,8 @@
-from sklearn.cluster import KMeans
 import numpy as np
+import skfuzzy as fuzz
 from fcmeans import FCM
 from matplotlib import pyplot as plt
-import skfuzzy as fuzz
+from sklearn.cluster import KMeans
 
 X = np.array([[1, 2, 4], [1, 4, 6], [1, 0, 7],
               [10, 2, 8], [10, 4, 9], [10, 0, 7]])
@@ -14,12 +14,10 @@ print(kmeans.predict(X))
 
 print(kmeans.cluster_centers_)
 
-
 fzcmeans = fuzz.cluster.cmeans(
-        X, 2, 2, error=0.005, maxiter=1000, init=None)
+    X, 2, 2, error=0.005, maxiter=1000, init=None)
 
 print(fzcmeans)
-
 
 fuzzy_fcm = FCM(n_clusters=2)
 fuzzy_fcm.fit(X)
@@ -29,8 +27,6 @@ fcm_labels = fuzzy_fcm.predict(X)
 
 print(fcm_centers)
 print(fcm_labels)
-
-
 
 colors = ['b', 'orange', 'g', 'r', 'c', 'm', 'y', 'k', 'Brown', 'ForestGreen']
 
@@ -43,7 +39,6 @@ centers = [[4, 2],
 sigmas = [[0.8, 0.3],
           [0.3, 0.5],
           [1.1, 0.7]]
-
 
 xpts = np.zeros(1)
 ypts = np.zeros(1)
@@ -83,7 +78,6 @@ for ncenters, ax in enumerate(axes1.reshape(-1), 2):
     ax.axis('off')
 
 fig1.tight_layout()
-
 
 n_samples = 3000
 

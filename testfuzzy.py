@@ -36,7 +36,6 @@ users_skills, clusters_ground_truth = skills_gen(
 print("Generating graph")
 G = generate_graph(clusters_ground_truth)
 
-
 # Define three cluster centers
 centers = [[4, 2],
            [1, 7],
@@ -67,7 +66,6 @@ X_test = np.concatenate((
     np.random.normal((9, 0), size=(n_samples, 2)),
     np.random.normal((5, -8), size=(n_samples, 2))
 ))
-
 
 plt.figure(figsize=(5, 5))
 plt.scatter(X_test[:, 0], X_test[:, 1], alpha=.1)

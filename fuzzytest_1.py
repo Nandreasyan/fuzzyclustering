@@ -1,14 +1,9 @@
-from fcmeans import FCM
-from sklearn.datasets import make_blobs
-from matplotlib import pyplot as plt
-
 import numpy as np
-from scipy.spatial.distance import dice, cdist
+from fcmeans import FCM
+from matplotlib import pyplot as plt
+from scipy.spatial.distance import dice
 
 from generate_data import skills_gen, generate_graph
-from clustering import clustering, evaluate_clustering
-from misc import plot_graph
-
 
 np.set_printoptions(formatter={"float": lambda x: "{0:0.2f}".format(x)})
 
@@ -43,7 +38,6 @@ users_skills, clusters_ground_truth = skills_gen(
 print("Generating graph")
 G = generate_graph(N, K, P, seed)
 
-
 n_samples = 3000
 
 X = np.concatenate((
@@ -58,7 +52,6 @@ fz_kmeans.fit(X)
 # outputs
 fcm_centers = fz_kmeans.centers
 fcm_labels = fz_kmeans.u.argmax(axis=1)
-
 
 # plot result
 f, axes = plt.subplots(1, 2, figsize=(11, 5))

@@ -1,11 +1,11 @@
 import collections
 
 import numpy as np
-import skfuzzy as fuzz
 from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
 from sklearn.metrics import davies_bouldin_score, silhouette_score, calinski_harabasz_score
 from sklearn.metrics import normalized_mutual_info_score
+
 from fcm import FCM
 
 
@@ -88,7 +88,7 @@ def fzclustering(users_skills, n_clusters_range, plot=False):
     fzmodels_1 = {}
     fzmodels_2 = {}
 
-    models ={}
+    models = {}
     # The fuzzy partition coefficient (FPC)
     fpcs = []
     fpcs_2 = []
@@ -100,14 +100,14 @@ def fzclustering(users_skills, n_clusters_range, plot=False):
         # models[n_clusters_] = kmeans
         #
         # cntr, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(
-        #     np.transpose(X), n_clusters_, 2, error=0.005, maxiter=150, init=None)
+        #     np.transpose(X), n_clusters_, 1.4, error=0.005, maxiter=150, init=None)
         # fpcs.append(fpc)
         # # labels_
         # cluster_membership = np.argmax(u, axis=0)
         # fzmodels_1[n_clusters_] = cntr, u, u0, d, jm, p, fpc, cluster_membership
 
         # another library
-        fuzzy_fcm = FCM(n_clusters=n_clusters_, max_iter=150, m=1.01, error=1e-5, random_state=42)
+        fuzzy_fcm = FCM(n_clusters=n_clusters_, max_iter=150, m=1.4, error=1e-5, random_state=88)
         fuzzy_fcm.fit(X)
 
         fcm_centers = fuzzy_fcm.centers
@@ -120,12 +120,10 @@ def fzclustering(users_skills, n_clusters_range, plot=False):
 
         fzmodels_2[n_clusters_] = fcm_centers, fcm_labels, fuzzy_clustering_coeff
 
-        #print("")
-
-    #best_nun_cluster_1 = max(fzmodels_1.values(), key=lambda x: x[6])
+    # best_num_cluster_1 = max(fzmodels_1.values(), key=lambda x: x[6])
 
     best_centers_2 = max(fzmodels_2.values(), key=lambda x: x[2])
-    print("")
+
     if plot:
         plt.figure()
         plt.title(f"Fuzzy c-means over number of clusters")
@@ -137,4 +135,4 @@ def fzclustering(users_skills, n_clusters_range, plot=False):
         plt.savefig(f"clustering_Fuzzy_1.png")
         plt.close()
 
-    return fzmodels_2[6]
+    return best_centers_2
