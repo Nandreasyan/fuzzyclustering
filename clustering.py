@@ -81,33 +81,18 @@ def evaluate_clustering(clusters_ground_truth, cluster_predicted):
         clusters_ground_truth, cluster_predicted))
 
 
-def fzclustering(users_skills, n_clusters_range, plot=False):
+def fzclustering(users_skills, n_clusters_range, fuzzpar, plot=False):
     X = users_skills
     n_clusters_range = list(n_clusters_range)
 
-    fzmodels_1 = {}
-    fzmodels_2 = {}
+    fzmodels = {}
 
-    models = {}
-    # The fuzzy partition coefficient (FPC)
     fpcs = []
-    fpcs_2 = []
 
     # Find the best number of clusters
     for n_clusters_ in n_clusters_range:
-        # kmeans = KMeans(n_clusters=n_clusters_, random_state=42,
-        #                 n_init=3, max_iter=150).fit(X)
-        # models[n_clusters_] = kmeans
-        #
-        # cntr, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(
-        #     np.transpose(X), n_clusters_, 1.4, error=0.005, maxiter=150, init=None)
-        # fpcs.append(fpc)
-        # # labels_
-        # cluster_membership = np.argmax(u, axis=0)
-        # fzmodels_1[n_clusters_] = cntr, u, u0, d, jm, p, fpc, cluster_membership
-
         # another library
-        fuzzy_fcm = FCM(n_clusters=n_clusters_, max_iter=150, m=1.4, error=1e-5, random_state=88)
+        fuzzy_fcm = FCM(n_clusters=n_clusters_, max_iter=50, m=fuzzpar, error=1e-5, random_state=88)
         fuzzy_fcm.fit(X)
 
         fcm_centers = fuzzy_fcm.centers
@@ -116,13 +101,11 @@ def fzclustering(users_skills, n_clusters_range, plot=False):
         fuzzy_clustering_coeff = fuzzy_fcm.partition_coefficient
         pec = fuzzy_fcm.partition_entropy_coefficient
 
-        fpcs_2.append(fuzzy_clustering_coeff)
+        fpcs.append(fuzzy_clustering_coeff)
 
-        fzmodels_2[n_clusters_] = fcm_centers, fcm_labels, fuzzy_clustering_coeff
+        fzmodels[n_clusters_] = fcm_centers, fcm_labels, fuzzy_clustering_coeff, fuzzy_fcm
 
-    # best_num_cluster_1 = max(fzmodels_1.values(), key=lambda x: x[6])
-
-    best_centers_2 = max(fzmodels_2.values(), key=lambda x: x[2])
+    best_centers = max(fzmodels.values(), key=lambda x: x[2])
 
     if plot:
         plt.figure()
@@ -130,9 +113,9 @@ def fzclustering(users_skills, n_clusters_range, plot=False):
         plt.xlabel("Number of clusters")
         plt.xticks(n_clusters_range)
         plt.ylabel("Fuzzy partition coefficient")
-        plt.plot(n_clusters_range, fpcs_2)
+        plt.plot(n_clusters_range, fpcs)
         plt.tight_layout()
         plt.savefig(f"clustering_Fuzzy_1.png")
         plt.close()
 
-    return best_centers_2
+    return best_centers
