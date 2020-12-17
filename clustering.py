@@ -1,5 +1,6 @@
 import collections
-
+from datetime import datetime
+import time
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
@@ -29,12 +30,24 @@ def clustering(users_skills, n_clusters_range, plot=False):
     best_n = {k: None for k in methods}
 
     models = {}
+    times = []
+
 
     # Find the best number of clusters
     for n in n_clusters_range:
         plotX.append(n)
+
+        #start_time = datetime.now()
+        start = time.time()
         kmeans = KMeans(n_clusters=n, random_state=42,
                         n_init=3, max_iter=50).fit(X)
+        end = time.time()
+        times.append(end - start)
+       # end_time = datetime.now()
+
+        #print("Number of clusters " + str(n) + ' duration: ' + str((end_time - start_time)/1000))
+        #print("Number of clusters " + str(n) + ' duration: ' + str((end - start)))
+
         models[n] = kmeans
 
         for method_str, (method, optimization_sign) in methods.items():
@@ -73,7 +86,7 @@ def clustering(users_skills, n_clusters_range, plot=False):
             # can't decide, two number of cluster have the same number of metric voting
             return None
 
-    return best_model
+    return best_model, times
 
 
 def evaluate_clustering(clusters_ground_truth, cluster_predicted):
@@ -86,14 +99,19 @@ def fzclustering(users_skills, n_clusters_range, fuzzpar, plot=False):
     n_clusters_range = list(n_clusters_range)
 
     fzmodels = {}
-
+    times = []
     fpcs = []
 
     # Find the best number of clusters
     for n_clusters_ in n_clusters_range:
         # another library
-        fuzzy_fcm = FCM(n_clusters=n_clusters_, max_iter=50, m=fuzzpar, error=1e-5, random_state=88)
+        start = time.time()
+        fuzzy_fcm = FCM(n_clusters=n_clusters_, max_iter=50, m=fuzzpar, error=1e-5, random_state=37)
         fuzzy_fcm.fit(X)
+        end = time.time()
+        times.append(end - start)
+
+        #print("Number of fuzzy clusters " + str(n_clusters_) + ' duration: ' + str((end - start)))
 
         fcm_centers = fuzzy_fcm.centers
         fcm_labels = fuzzy_fcm.predict(X)
@@ -118,4 +136,4 @@ def fzclustering(users_skills, n_clusters_range, fuzzpar, plot=False):
         plt.savefig(f"clustering_Fuzzy_1.png")
         plt.close()
 
-    return best_centers
+    return best_centers, times

@@ -10,4 +10,4 @@ def plot_graph(G, name, colors):
     nx.draw_networkx_edges(G, pos=pos)
     plt.tight_layout()
     plt.axis("off")
-    plt.savefig(name)
+    plt.draw()
